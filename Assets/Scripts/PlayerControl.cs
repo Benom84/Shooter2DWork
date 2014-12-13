@@ -7,6 +7,9 @@ public class PlayerControl : MonoBehaviour
 	public bool facingRight = true;			// For determining which way the player is currently facing.
 	[HideInInspector]
 	public bool jump = false;				// Condition for whether the player should jump.
+	[HideInInspector]
+	public int currentGround;		// For finding out where the enemies should go
+
 
 
 	public float moveForce = 365f;			// Amount of force added to move the player left and right.
@@ -21,7 +24,13 @@ public class PlayerControl : MonoBehaviour
 	private int tauntIndex;					// The index of the taunts array indicating the most recent taunt.
 	private Transform groundCheck;			// A position marking where to check if the player is grounded.
 	private bool grounded = false;			// Whether or not the player is grounded.
+
+	private bool inAir = false;				// Whether the player is currently in the air
+
 	private Animator anim;					// Reference to the player's animator component.
+
+	private int oldGround;
+
 
 
 	void Awake()
@@ -35,11 +44,24 @@ public class PlayerControl : MonoBehaviour
 	void Update()
 	{
 		// The player is grounded if a linecast to the groundcheck position hits anything on the ground layer.
-		grounded = Physics2D.Linecast(transform.position, groundCheck.position, 1 << LayerMask.NameToLayer("Ground"));  
+		grounded = Physics2D.Linecast(transform.position, groundCheck.position, 1 << LayerMask.NameToLayer("Ground")); 
 
+
+		if (grounded) {
+
+			currentGround = Physics2D.Linecast (transform.position, groundCheck.position, 1 << LayerMask.NameToLayer ("Ground")).collider.gameObject.GetInstanceID();
+			if (currentGround != oldGround)
+			{
+				Debug.Log("Player: " + currentGround);
+				oldGround = currentGround;
+			}
+
+
+		}
 		// If the jump button is pressed and the player is grounded then the player should jump.
 		if(Input.GetButtonDown("Jump") && grounded)
 			jump = true;
+
 	}
 
 
@@ -88,7 +110,19 @@ public class PlayerControl : MonoBehaviour
 		}
 	}
 	
-	
+	void OnTriggerEnter2D(Collider2D hit)
+	{
+
+
+		if ((hit.gameObject.tag == "Bouncer") && (grounded)) {
+			//jump = true;
+			Debug.Log("Touched bouncer");
+		}
+						
+	}
+
+
+
 	void Flip ()
 	{
 		// Switch the way the player is labelled as facing.
