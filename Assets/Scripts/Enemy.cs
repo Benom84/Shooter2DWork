@@ -32,6 +32,7 @@ public class Enemy : MonoBehaviour
 	public float deathSpinMin = -100f;	// A value to give the minimum amount of Torque when dying
 	public float deathSpinMax = 100f;	// A value to give the maximum amount of Torque when dying
 	public float jumpForce = 10f;
+	public float jumpForceHor = 10f;
 
 
 	private SpriteRenderer ren;			// Reference to the sprite renderer.
@@ -42,6 +43,7 @@ public class Enemy : MonoBehaviour
 
 	private GameObject player;			// Reference to the player object
 	private float xDestination;			// The destination on the X axis
+	private float yDestination;			// The destination on the Y axis
 	private bool left;					// If the enemy is facing left
 	private Transform groundCheck;
 	private int ground;
@@ -50,12 +52,16 @@ public class Enemy : MonoBehaviour
 	private bool grounded;
 	private GameObject mapManager;		// The map
 	private bool jump = false;
+	private GameObject nextBouncer;		//
 
 	private int oldGround;
 
 	private GameObject[] bouncers;		// List of all Bouncers
 	private int[,] edgeMatrix;			// The edge matrix
 	private int prevPlayerGround; //
+	private Stack<GameObject> path;
+
+
 
 	void Awake ()
 	{
@@ -66,9 +72,14 @@ public class Enemy : MonoBehaviour
 
 		groundCheck = transform.Find ("groundCheck").transform;
 		player = GameObject.FindGameObjectWithTag ("Player");
+
+
+
 		mapManager = GameObject.FindGameObjectWithTag ("map");
 		bouncers = mapManager.GetComponent<MapCreator> ().bouncers;
 		edgeMatrix = mapManager.GetComponent<MapCreator> ().edgeMatrix;
+
+
 		if (rigidbody2D.velocity.x < 0)
 				left = true;
 	}
@@ -82,10 +93,10 @@ public class Enemy : MonoBehaviour
 		if((jump) && (grounded))
 		{
 			
-			// Add a vertical force to the player.
-			rigidbody2D.AddForce(new Vector2(15f, jumpForce));
+			// Add a vertical and horizontal force to the enemy.
+			rigidbody2D.AddForce(new Vector2(jumpForceHor * (left ? 1 : -1), jumpForce));
 			
-			// Make sure the player can't jump again until the jump conditions from Update are satisfied.
+
 		}
 
 		//Check if the enemy is on the ground, if it is, get the ground id and mark it
@@ -94,6 +105,7 @@ public class Enemy : MonoBehaviour
 		{
 			ground = Physics2D.Linecast (transform.position, groundCheck.position, 1 << LayerMask.NameToLayer ("Ground")).collider.gameObject.GetInstanceID ();
 			jump = false;
+
 		}
 
 		// If the player is not dead and the enemy is not jumping we have to know where he is going
@@ -108,19 +120,26 @@ public class Enemy : MonoBehaviour
 				Debug.Log ("FixedUpdate 2.5");
 				// save the new player ground and get the position x of the next bouncer to go to
 				prevPlayerGround = playerGround;
-				xDestination = getNextBouncer ().transform.position.x;
+				nextBouncer = getNextBouncer ();
+				xDestination = nextBouncer.transform.position.x;
+				yDestination = nextBouncer.transform.position.y;
 				Debug.Log("xDestination is: " + xDestination);
 			}
 			else if (ground == playerGround)
+			{
 				// If the ground is the player's - go towards him
 				xDestination = player.transform.position.x;
-			
+				yDestination = player.transform.position.y;
+				nextBouncer = null;
+				path = null;
+			}
 			
 		}
 		//Checking if the enemy should flip according to his destination
-		if (((transform.position.x - xDestination < 0) && left) || 
-		    ((transform.position.x - xDestination > 0) && !left))
-			Flip ();
+		if (grounded)
+			if (((transform.position.x - xDestination < 0) && left) || 
+		    	((transform.position.x - xDestination > 0) && !left))
+				Flip ();
 		
 
 
@@ -138,7 +157,7 @@ public class Enemy : MonoBehaviour
 
 		// Set the enemy's velocity to moveSpeed in the x direction.
 		// Only if we are not on the destination itself.
-		if (Mathf.Abs(xDestination - transform.position.x) > 0.2)
+		if (Mathf.Abs(xDestination - transform.position.x) > 0.1)
 			rigidbody2D.velocity = new Vector2 (transform.localScale.x * moveSpeed, rigidbody2D.velocity.y);	
 
 		// If the enemy has one hit point left and has a damagedEnemy sprite...
@@ -152,11 +171,11 @@ public class Enemy : MonoBehaviour
 				Death ();
 	}
 
-	void OnTriggerEnter2D(Collider2D hit)
+	void OnTriggerStay2D(Collider2D hit)
 	{
 		
 		
-		if ((hit.gameObject.tag == "Bouncer") && (grounded)) {
+		if ((hit.gameObject == nextBouncer) && (grounded)) {
 			jump = true;
 			Debug.Log("Touched bouncer");
 		}
@@ -225,7 +244,13 @@ public class Enemy : MonoBehaviour
 
 
 
-	public GameObject getNextBouncer() {
+	private void createPath()
+	{
+
+	
+	}
+
+	private GameObject getNextBouncer() {
 
 
 		GameObject source = null;
@@ -262,7 +287,6 @@ public class Enemy : MonoBehaviour
 			if (currBouncer == source) 
 			{
 				bnArray [counter].setLabel (0);
-				Debug.Log("enqueue!!!");
 				q.Enqueue (bnArray [counter]);
 			}
 			counter++;
@@ -275,15 +299,14 @@ public class Enemy : MonoBehaviour
 
 		// While queue is not empty
 		while (parentNode != null) {
-			Debug.Log("qCount > 0");
 			for (int i = 0; i < bnArray.Length; i++) {
 				// If there is an edge from parent to node i and node i was not marked
-				Debug.Log("Checking bouncer: " + bnArray[i].getBouncer().GetInstanceID() + " For parent: " + parentNode.getBouncer().GetInstanceID());
-				if (edgeMatrix [mapManager.GetComponent<MapCreator> ().indexOfBouncer (parentNode.getBouncer ()), i] == 1) {
+				//Debug.Log("Checking bouncer: " + bnArray[i].getBouncer().GetInstanceID() + " For parent: " + parentNode.getBouncer().GetInstanceID());
+				if (edgeMatrix [mapManager.GetComponent<MapCreator> ().indexOfBouncer (parentNode.getBouncer ()), i] > 0) {
 					if (bnArray [i].getLabel () < 0) {
 						q.Enqueue (bnArray [i]);
 						bnArray [i].setLabel (label + 1);
-						Debug.Log("Enqueueing " + bnArray[i].getBouncer().GetInstanceID() + " With parent: " + parentNode.getBouncer().GetInstanceID());
+						//Debug.Log("Enqueueing " + bnArray[i].getBouncer().GetInstanceID() + " With parent: " + parentNode.getBouncer().GetInstanceID());
 						bnArray [i].setFather (parentNode);
 					}
 				}
@@ -300,15 +323,15 @@ public class Enemy : MonoBehaviour
 		// Get the index of the bouncer closest to the player and set destination as that bouncer
 		int playerBouncerIndex = mapManager.GetComponent<MapCreator>().indexOfBouncer (mapManager.GetComponent<MapCreator>().getPlayerClosestBouncer ());
 		BouncerNode destination = bnArray [playerBouncerIndex];
-		Debug.Log("Player closest bouncer is " + destination.getBouncer().GetInstanceID() );
+		//Debug.Log("Player closest bouncer is " + destination.getBouncer().GetInstanceID() );
 
 		// get the child of the source that will lead to the shortest path to the destination
-		Debug.Log ("First: " + (destination.getFather () != null));
-		Debug.Log("Second: " + (destination.getFather().getBouncer() != source));
-		while ((destination.getFather() != null) && (destination.getFather().getBouncer() != source)) 
+		//Debug.Log ("First: " + (destination.getFather () != null));
+		//Debug.Log("Second: " + (destination.getFather().getBouncer() != source));
+		while (destination.getFather() != null) 
 		{
 			destination = destination.getFather ();
-			Debug.Log("Its parent bouncer is X: " + destination.getBouncer().transform.position.x + " Y: " + destination.getBouncer().transform.position.y );
+			//Debug.Log("Its parent bouncer is X: " + destination.getBouncer().transform.position.x + " Y: " + destination.getBouncer().transform.position.y );
 		}
 		return destination.getBouncer();
 
