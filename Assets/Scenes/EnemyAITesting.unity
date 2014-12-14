@@ -168,6 +168,18 @@ Prefab:
       propertyPath: m_Name
       value: foregrounds
       objectReference: {fileID: 0}
+    - target: {fileID: 400046, guid: 708042f972a104a1793983dbefca755f, type: 2}
+      propertyPath: m_LocalScale.x
+      value: -1.5
+      objectReference: {fileID: 0}
+    - target: {fileID: 400032, guid: 708042f972a104a1793983dbefca755f, type: 2}
+      propertyPath: m_LocalScale.x
+      value: -1.5
+      objectReference: {fileID: 0}
+    - target: {fileID: 400028, guid: 708042f972a104a1793983dbefca755f, type: 2}
+      propertyPath: m_LocalScale.x
+      value: -1.5
+      objectReference: {fileID: 0}
     m_RemovedComponents: []
   m_ParentPrefab: {fileID: 100100000, guid: 708042f972a104a1793983dbefca755f, type: 2}
   m_RootGameObject: {fileID: 1752247963}
@@ -517,8 +529,8 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   bouncers: []
-  maxUpJump: 5
-  maxDownJump: 8
+  maxUpJump: 15
+  maxDownJump: 18
   surfaceChange: .400000006
 --- !u!1 &212856307
 GameObject:
@@ -2401,6 +2413,10 @@ Prefab:
       propertyPath: m_LocalRotation.w
       value: 1
       objectReference: {fileID: 0}
+    - target: {fileID: 100000, guid: bdd88e3de6e024ec1bacd58073808d06, type: 2}
+      propertyPath: m_IsActive
+      value: 0
+      objectReference: {fileID: 0}
     m_RemovedComponents: []
   m_ParentPrefab: {fileID: 100100000, guid: bdd88e3de6e024ec1bacd58073808d06, type: 2}
   m_RootGameObject: {fileID: 1049173827}
@@ -3037,7 +3053,7 @@ Transform:
   m_GameObject: {fileID: 848195676}
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
   m_LocalPosition: {x: -14.0534678, y: 2.36184788, z: 0}
-  m_LocalScale: {x: -1, y: 1, z: 1}
+  m_LocalScale: {x: -1.5, y: 1, z: 1}
   m_Children:
   - {fileID: 212856308}
   - {fileID: 1482670871}
@@ -4542,7 +4558,7 @@ Transform:
   m_GameObject: {fileID: 1010842454}
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
   m_LocalPosition: {x: -1.25063515, y: -3.28302908, z: 0}
-  m_LocalScale: {x: -1, y: 1, z: 1}
+  m_LocalScale: {x: -1.5, y: 1, z: 1}
   m_Children:
   - {fileID: 422854932}
   - {fileID: 1045568132}
@@ -4599,7 +4615,7 @@ GameObject:
   m_Icon: {fileID: -1003283189, guid: 0000000000000000d000000000000000, type: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 4294967295
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!114 &1035144487
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -4873,7 +4889,7 @@ GameObject:
   m_Icon: {fileID: -1003283189, guid: 0000000000000000d000000000000000, type: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 4294967295
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!114 &1049173828
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -8068,7 +8084,7 @@ Transform:
   m_GameObject: {fileID: 1540617082}
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
   m_LocalPosition: {x: 11.6685667, y: 2.36184883, z: 0}
-  m_LocalScale: {x: -1, y: 1, z: 1}
+  m_LocalScale: {x: -1.5, y: 1, z: 1}
   m_Children:
   - {fileID: 1397180052}
   - {fileID: 1471773979}
@@ -8138,7 +8154,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 26e8197b97b4a4fa2ab4c51e208a70f4, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  spawnTime: 4
+  spawnTime: 400
   spawnDelay: 2
   enemies:
   - {fileID: 100000, guid: 4c5736ea0764d49c3a6adc2250d33f0f, type: 2}
@@ -8197,7 +8213,7 @@ Prefab:
       objectReference: {fileID: 0}
     - target: {fileID: 100000, guid: bdd88e3de6e024ec1bacd58073808d06, type: 2}
       propertyPath: m_IsActive
-      value: 1
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 400000, guid: bdd88e3de6e024ec1bacd58073808d06, type: 2}
       propertyPath: m_RootOrder
@@ -8451,6 +8467,10 @@ Prefab:
     - target: {fileID: 400000, guid: bdd88e3de6e024ec1bacd58073808d06, type: 2}
       propertyPath: m_RootOrder
       value: 2
+      objectReference: {fileID: 0}
+    - target: {fileID: 11400000, guid: bdd88e3de6e024ec1bacd58073808d06, type: 2}
+      propertyPath: spawnTime
+      value: 400
       objectReference: {fileID: 0}
     m_RemovedComponents: []
   m_ParentPrefab: {fileID: 100100000, guid: bdd88e3de6e024ec1bacd58073808d06, type: 2}
@@ -8994,6 +9014,7 @@ MonoBehaviour:
   facingRight: 1
   jump: 0
   currentGround: 0
+  currentGroundObject: {fileID: 0}
   moveForce: 365
   maxSpeed: 8
   jumpClips:

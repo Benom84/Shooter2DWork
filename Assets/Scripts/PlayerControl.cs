@@ -9,6 +9,8 @@ public class PlayerControl : MonoBehaviour
 	public bool jump = false;				// Condition for whether the player should jump.
 	[HideInInspector]
 	public int currentGround;		// For finding out where the enemies should go
+	[HideInInspector]
+	public GameObject currentGroundObject;
 
 
 
@@ -49,7 +51,8 @@ public class PlayerControl : MonoBehaviour
 
 		if (grounded) {
 
-			currentGround = Physics2D.Linecast (transform.position, groundCheck.position, 1 << LayerMask.NameToLayer ("Ground")).collider.gameObject.GetInstanceID();
+			currentGroundObject = Physics2D.Linecast (transform.position, groundCheck.position, 1 << LayerMask.NameToLayer ("Ground")).collider.gameObject;
+			currentGround = currentGroundObject.GetInstanceID();
 			if (currentGround != oldGround)
 			{
 				Debug.Log("Player: " + currentGround);
