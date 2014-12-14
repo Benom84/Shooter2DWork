@@ -113,16 +113,6 @@ public class PlayerControl : MonoBehaviour
 		}
 	}
 	
-	void OnTriggerEnter2D(Collider2D hit)
-	{
-
-
-		if ((hit.gameObject.tag == "Bouncer") && (grounded)) {
-			//jump = true;
-			Debug.Log("Touched bouncer");
-		}
-						
-	}
 
 
 
