@@ -27,8 +27,6 @@ public class PlayerControl : MonoBehaviour
 	private Transform groundCheck;			// A position marking where to check if the player is grounded.
 	private bool grounded = false;			// Whether or not the player is grounded.
 
-	private bool inAir = false;				// Whether the player is currently in the air
-
 	private Animator anim;					// Reference to the player's animator component.
 
 	private int oldGround;

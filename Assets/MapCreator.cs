@@ -2,50 +2,14 @@
 using System.Collections;
 using System.Collections.Generic;
 
-
-
+/* Notice the coding: 
+ * 10 - Jump up and left
+ * 11 - Jump up and right
+ * 20 - Jump down and left
+ * 21 - Jump down and right
+ *
+ */
 public class MapCreator : MonoBehaviour {
-
-	[HideInInspector]
-	public class BouncerNode
-	{
-		GameObject bouncer = null;
-		BouncerNode father = null;
-		int label = -1;
-
-		public BouncerNode(GameObject bouncer)
-		{
-			this.bouncer = bouncer;
-
-		}
-
-		public GameObject getBouncer()
-		{
-			return bouncer;
-		}
-
-		public void setFather(BouncerNode father)
-		{
-			this.father = father;
-		}
-
-		public BouncerNode getFather ()
-		{
-			return father;
-		}
-
-		public void setLabel(int label)
-		{
-			this.label = label;	
-		}
-
-		public int getLabel ()
-		{
-			return label;	
-		}
-
-	
-	}
 
 	[HideInInspector]
 	public GameObject[] bouncers;
@@ -91,15 +55,26 @@ public class MapCreator : MonoBehaviour {
 				{
 					if (distance < maxUpJump) 
 					{
-						Debug.Log("Added an edge between: " + bouncer.GetInstanceID() + " and " + otherBouncer.GetInstanceID());
-						edgeMatrix[row, col] = 2;
+						if (bouncer.transform.position.x > otherBouncer.transform.position.x)
+							edgeMatrix[row, col] = 10;
+						else
+							edgeMatrix[row, col] = 11;
+
+						Debug.Log("Added an edge between: " + bouncer.GetInstanceID() + " and " + otherBouncer.GetInstanceID() + " Type: " + edgeMatrix[row, col]);
+
 					}
 				} else
 				{
 					if (distance < maxDownJump)
 					{
-						Debug.Log("Added an edge between: " + bouncer.GetInstanceID() + " and " + otherBouncer.GetInstanceID());
-						edgeMatrix[row, col] = 1;
+
+
+						if (bouncer.transform.position.x > otherBouncer.transform.position.x)
+							edgeMatrix[row, col] = 20;
+						else
+							edgeMatrix[row, col] = 21;
+
+						Debug.Log("Added an edge between: " + bouncer.GetInstanceID() + " and " + otherBouncer.GetInstanceID() + " Type: " + edgeMatrix[row, col]);
 					}
 				}
 
@@ -112,28 +87,13 @@ public class MapCreator : MonoBehaviour {
 
 
 	}
-	
-
-	public int indexOfBouncer(GameObject bouncer)
-	{
-
-
-		int index = 0;
-		for (int i = 0; i < bouncers.Length; i++)
-		{
-			if (bouncer == bouncers[i])
-				return i;
-		}
-
-		return 0;
-	}
 
 	public GameObject getPlayerClosestBouncer()
 	{
 		GameObject player = GameObject.FindGameObjectWithTag ("Player");
 		GameObject playerGround = player.GetComponent <PlayerControl> ().currentGroundObject;
 		Transform[] groundBouncers = playerGround.GetComponentsInChildren<Transform>();
-
+		
 		GameObject result = null;
 		float distance = float.MaxValue;
 		foreach (Transform transformBouncer in groundBouncers) 
@@ -144,7 +104,7 @@ public class MapCreator : MonoBehaviour {
 					result = transformBouncer.gameObject;
 			}
 		}
-
+		
 		return result;
 	}
 }

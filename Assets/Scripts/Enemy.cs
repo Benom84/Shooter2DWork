@@ -10,6 +10,7 @@ public class Enemy : MonoBehaviour
 		GameObject bouncer = null;
 		BouncerNode father = null;
 		int label = -1;
+		int jumpType = 0;
 		
 		public BouncerNode(GameObject bouncer)	{this.bouncer = bouncer;}
 		public GameObject getBouncer(){return bouncer;}
@@ -17,6 +18,8 @@ public class Enemy : MonoBehaviour
 		public BouncerNode getFather (){return father;}
 		public void setLabel(int label){this.label = label;}
 		public int getLabel (){return label;}
+		public void setJumpType(int jump){this.jumpType = jump;}
+		public int getJumpType (){return jumpType;}
 	}
 
 
@@ -43,23 +46,18 @@ public class Enemy : MonoBehaviour
 
 	private GameObject player;			// Reference to the player object
 	private float xDestination;			// The destination on the X axis
-	private float yDestination;			// The destination on the Y axis
 	private bool left;					// If the enemy is facing left
 	private Transform groundCheck;
-	private int ground;
+	private int ground;					// The current ground's uid
 	private GameObject playerScript;
 	private int playerGround;			// The player's current ground
-	private bool grounded;
+	private bool grounded;				// To check that the enemy is on the ground
 	private GameObject mapManager;		// The map
-	private bool jump = false;
-	private GameObject nextBouncer;		//
-
-	private int oldGround;
+	private bool isJumping = false;			// If the enemy is in the middle of a jump
+	private BouncerNode nextBouncerNode;		//The node of the next bouncer the enemy is going towards
 
 	private GameObject[] bouncers;		// List of all Bouncers
 	private int[,] edgeMatrix;			// The edge matrix
-	private int prevPlayerGround; //
-	private Stack<GameObject> path;
 
 
 
@@ -79,107 +77,101 @@ public class Enemy : MonoBehaviour
 		bouncers = mapManager.GetComponent<MapCreator> ().bouncers;
 		edgeMatrix = mapManager.GetComponent<MapCreator> ().edgeMatrix;
 
+		isJumping = true;
 
 		if (rigidbody2D.velocity.x < 0)
 				left = true;
 	}
 
+
 	void FixedUpdate ()
 	{
-		// Create an array of all the colliders in front of the enemy.
 		Collider2D[] frontHits = Physics2D.OverlapPointAll (frontCheck.position, 1);
-
-		// If the enemy is grounded and marked as jump, then jump
-		if((jump) && (grounded))
-		{
-			
-			// Add a vertical and horizontal force to the enemy.
-			rigidbody2D.AddForce(new Vector2(jumpForceHor * (left ? 1 : -1), jumpForce));
-			
-
-		}
-
-		//Check if the enemy is on the ground, if it is, get the ground id and mark it
 		grounded = Physics2D.Linecast (transform.position, groundCheck.position, 1 << LayerMask.NameToLayer ("Ground"));
+
 		if (grounded) 
-		{
 			ground = Physics2D.Linecast (transform.position, groundCheck.position, 1 << LayerMask.NameToLayer ("Ground")).collider.gameObject.GetInstanceID ();
-			jump = false;
 
-		}
+		if (player != null) {
 
-		// If the player is not dead and the enemy is not jumping we have to know where he is going
-		if ((player != null) && (!jump)) {
+				playerGround = player.GetComponent <PlayerControl> ().currentGround;
 
-			// Getting the player ground
-			playerGround = player.GetComponent <PlayerControl> ().currentGround;
+				// If ((we are not at the player's ground and the player changed location) or (our ground is not the one we wanted)) and grounded
+				if ((rigidbody2D.velocity.y == 0) && isJumping && grounded && (ground != playerGround)) {
+						nextBouncerNode = getNextBounderNode ();
+						xDestination = nextBouncerNode.getBouncer ().transform.position.x;
+						isJumping = false;
+				} else if (ground == playerGround) {
+						xDestination = player.transform.position.x;
 
-			// If our ground is not the same as the player's and the player switched grounds since last update
-			if ((ground != playerGround) && (prevPlayerGround != playerGround))
-			{
-				Debug.Log ("FixedUpdate 2.5");
-				// save the new player ground and get the position x of the next bouncer to go to
-				prevPlayerGround = playerGround;
-				nextBouncer = getNextBouncer ();
-				xDestination = nextBouncer.transform.position.x;
-				yDestination = nextBouncer.transform.position.y;
-				Debug.Log("xDestination is: " + xDestination);
-			}
-			else if (ground == playerGround)
-			{
-				// If the ground is the player's - go towards him
-				xDestination = player.transform.position.x;
-				yDestination = player.transform.position.y;
-				nextBouncer = null;
-				path = null;
-			}
-			
-		}
-		//Checking if the enemy should flip according to his destination
-		if (grounded)
-			if (((transform.position.x - xDestination < 0) && left) || 
-		    	((transform.position.x - xDestination > 0) && !left))
-				Flip ();
-		
-
-
-		// Check each of the colliders.
-		foreach (Collider2D c in frontHits) {
-				// If any of the colliders is an Obstacle...
-				if (c.tag == "Obstacle") {
-						// ... Flip the enemy and stop checking the other colliders.
-						Flip ();
-						break;
 				}
 		}
 
 
 
+
+		if (transform.rigidbody2D.velocity.y == 0)
+			if (((transform.position.x - xDestination < 0) && left) || 
+			    ((transform.position.x - xDestination > 0) && !left))
+				Flip ();
+
+		// Check each of the colliders.
+		foreach (Collider2D c in frontHits) {
+			// If any of the colliders is an Obstacle...
+			if (c.tag == "Obstacle") {
+				// ... Flip the enemy and stop checking the other colliders.
+				Flip ();
+				break;
+			}
+		}
+
 		// Set the enemy's velocity to moveSpeed in the x direction.
 		// Only if we are not on the destination itself.
 		if (Mathf.Abs(xDestination - transform.position.x) > 0.1)
-			rigidbody2D.velocity = new Vector2 (transform.localScale.x * moveSpeed, rigidbody2D.velocity.y);	
+			rigidbody2D.velocity = new Vector2 (transform.localScale.x * moveSpeed, rigidbody2D.velocity.y);
 
 		// If the enemy has one hit point left and has a damagedEnemy sprite...
 		if (HP == 1 && damagedEnemy != null)
-		// ... set the sprite renderer's sprite to be the damagedEnemy sprite.
+			// ... set the sprite renderer's sprite to be the damagedEnemy sprite.
 			ren.sprite = damagedEnemy;
 		
 		// If the enemy has zero or fewer hit points and isn't dead yet...
 		if (HP <= 0 && !dead)
-		// ... call the death function.
-				Death ();
+			// ... call the death function.
+			Death ();
 	}
+
 
 	void OnTriggerStay2D(Collider2D hit)
 	{
 		
 		
-		if ((hit.gameObject == nextBouncer) && (grounded)) {
-			jump = true;
-			Debug.Log("Touched bouncer");
+		if ((nextBouncerNode != null) && (hit.gameObject == nextBouncerNode.getBouncer()) && (grounded)) {
+			Jump();
 		}
 		
+	}
+
+	private void Jump()
+	{
+		Debug.Log("I should jump " + nextBouncerNode.getJumpType() + " the bouncer is " + nextBouncerNode.getBouncer().GetInstanceID()	);
+		int jumpType = nextBouncerNode.getJumpType ();
+		int jumpHorizontalDirection = jumpType % 10;
+		int jumpVerticalDirection = jumpType / 10;
+
+		if ((jumpHorizontalDirection == 0) && !left)
+			Flip ();
+		else if ((jumpHorizontalDirection == 1) && left)
+		          Flip();
+
+		if (jumpVerticalDirection == 1)
+			// Add a vertical and horizontal force to the enemy.
+			rigidbody2D.AddForce(new Vector2(jumpForceHor * (left ? -1 : 1), jumpForce));
+		else
+			rigidbody2D.AddForce(new Vector2(jumpForceHor * (left ? -1 : 1), jumpForce/10));
+
+		isJumping = true;
+	
 	}
 
 
@@ -234,109 +226,88 @@ public class Enemy : MonoBehaviour
 
 	public void Flip ()
 	{
-			// Multiply the x component of localScale by -1.
-			Vector3 enemyScale = transform.localScale;
-			enemyScale.x *= -1;
-			transform.localScale = enemyScale;
-			left = !(left);
+		// Multiply the x component of localScale by -1.
+		Vector3 enemyScale = transform.localScale;
+		enemyScale.x *= -1;
+		transform.localScale = enemyScale;
+		left = !(left);
+
 	}
 
 
-
-
-	private void createPath()
+	private BouncerNode getNextBounderNode()
 	{
-
-	
-	}
-
-	private GameObject getNextBouncer() {
-
-
-		GameObject source = null;
-		float distance = float.MaxValue;
-		
-		// Find the closest bouncer to the enemey - should be modified to the closest on the same ground object
-		foreach (GameObject bouncer in bouncers) 
-		{
-			if (Vector2.Distance(bouncer.transform.position, transform.position) < distance)
-			{
-				distance = Vector2.Distance(bouncer.transform.position, transform.position);
-				source = bouncer;
-			}
-		}
+		Transform[] currGroundBouncersT = Physics2D.Linecast (transform.position, groundCheck.position, 1 << LayerMask.NameToLayer ("Ground")).collider.gameObject.GetComponentsInChildren<Transform> ();
 
 		// Calculate the next bouncer to go to
-		Debug.Log ("The source determined as X: " + source.transform.position.x + " Y: " + source.transform.position.y);
-		return shortestPathToPlayer(source);
-		
-	}
-
-
-
-	private GameObject shortestPathToPlayer(GameObject source)
-	{
 		Queue<BouncerNode> q = new Queue<BouncerNode> ();
 		BouncerNode[] bnArray = new BouncerNode[bouncers.Length];
-		int counter = 0;
 
-
-		// Creating an array of nodes that only the source is labeled 0
+		// Creating an array of nodes that only the the bouncers on our current ground are labeled 0
 		foreach (GameObject currBouncer in bouncers) {
-			bnArray [counter] = new BouncerNode (currBouncer);
-			if (currBouncer == source) 
+			int currIndex = indexOfBouncer(currBouncer);
+			bnArray [currIndex] = new BouncerNode (currBouncer);
+			foreach (Transform bouncerT in currGroundBouncersT)
 			{
-				bnArray [counter].setLabel (0);
-				q.Enqueue (bnArray [counter]);
+				if (currBouncer == bouncerT.gameObject) 
+				{
+
+					bnArray[currIndex].setLabel(0);
+					q.Enqueue(bnArray[currIndex]);
+				}
 			}
-			counter++;
+
 		}
 
-
-		// Getting the source node from the queue
+		// Getting the first node from the queue
 		BouncerNode parentNode = q.Dequeue ();
-		int label = 0;
+		int label = parentNode.getLabel();
 
 		// While queue is not empty
 		while (parentNode != null) {
 			for (int i = 0; i < bnArray.Length; i++) {
 				// If there is an edge from parent to node i and node i was not marked
-				//Debug.Log("Checking bouncer: " + bnArray[i].getBouncer().GetInstanceID() + " For parent: " + parentNode.getBouncer().GetInstanceID());
-				if (edgeMatrix [mapManager.GetComponent<MapCreator> ().indexOfBouncer (parentNode.getBouncer ()), i] > 0) {
+				if (edgeMatrix [indexOfBouncer (parentNode.getBouncer ()), i] > 0) {
 					if (bnArray [i].getLabel () < 0) {
+						
 						q.Enqueue (bnArray [i]);
 						bnArray [i].setLabel (label + 1);
-						//Debug.Log("Enqueueing " + bnArray[i].getBouncer().GetInstanceID() + " With parent: " + parentNode.getBouncer().GetInstanceID());
 						bnArray [i].setFather (parentNode);
 					}
 				}
 			}
-
+			
 			label++;
-			if (q.Count > 0)
+			if (q.Count > 0) {
 				parentNode = q.Dequeue ();
+				label = parentNode.getLabel();
+			}
 			else
 				parentNode = null;
 		}
 		// Now we have an array with nodes containing the label and father for each bouncer
-
 		// Get the index of the bouncer closest to the player and set destination as that bouncer
-		int playerBouncerIndex = mapManager.GetComponent<MapCreator>().indexOfBouncer (mapManager.GetComponent<MapCreator>().getPlayerClosestBouncer ());
+		int playerBouncerIndex = indexOfBouncer (mapManager.GetComponent<MapCreator>().getPlayerClosestBouncer ());
 		BouncerNode destination = bnArray [playerBouncerIndex];
-		//Debug.Log("Player closest bouncer is " + destination.getBouncer().GetInstanceID() );
-
-		// get the child of the source that will lead to the shortest path to the destination
-		//Debug.Log ("First: " + (destination.getFather () != null));
-		//Debug.Log("Second: " + (destination.getFather().getBouncer() != source));
 		while (destination.getFather() != null) 
 		{
+			destination.getFather().setJumpType(edgeMatrix [indexOfBouncer (destination.getFather().getBouncer ()), indexOfBouncer (destination.getBouncer ())]);
 			destination = destination.getFather ();
-			//Debug.Log("Its parent bouncer is X: " + destination.getBouncer().transform.position.x + " Y: " + destination.getBouncer().transform.position.y );
+			
 		}
-		return destination.getBouncer();
-
-
+		return destination;
 	}
 
-	
+	private int indexOfBouncer(GameObject bouncer)
+	{
+		
+		
+		for (int i = 0; i < bouncers.Length; i++)
+		{
+			if (bouncer == bouncers[i])
+				return i;
+		}
+		
+		return -1;
+	}
 }
